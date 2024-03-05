@@ -1,7 +1,7 @@
 import asyncio
 import json
 import websockets
-from pymongo import MongoClient 
+from pymongo import MongoClient
 
 async def handle_websocket(websocket, _):
     print('5')
@@ -11,8 +11,8 @@ async def handle_websocket(websocket, _):
         print('message',message)
         await websocket.send(message)
 
-async def handle_change_stream(cursor):
-    for change in cursor:
+async def handle_change_stream(cursor, websocket):
+    async for change in cursor:
         print(change)
         await websocket.send(json.dumps(change))
 
@@ -26,7 +26,8 @@ async def main():
 
     async with websockets.serve(handle_websocket, "localhost", 8765):
         print('3')
-        asyncio.create_task(handle_change_stream(cursor))
+        async for websocket, _ in websockets.serve(handle_websocket, "localhost", 8765):
+            asyncio.create_task(handle_change_stream(cursor, websocket))
         print('4')
         await asyncio.Future()  # run forever
 
